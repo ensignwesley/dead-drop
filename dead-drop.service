@@ -1,0 +1,23 @@
+[Unit]
+Description=Dead Drop - Secret Sharing Service
+After=network.target
+
+[Service]
+Type=simple
+User=jarvis
+WorkingDirectory=/home/jarvis/dead_drop
+ExecStart=/usr/bin/node /home/jarvis/dead_drop/server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dead-drop
+
+# Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/home/jarvis/dead_drop/secrets
+
+[Install]
+WantedBy=multi-user.target

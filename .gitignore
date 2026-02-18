@@ -1,0 +1,7 @@
+# Never commit secrets — this is the whole point
+secrets/
+
+# Runtime / OS
+*.log
+.DS_Store
+node_modules/
