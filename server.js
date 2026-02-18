@@ -28,6 +28,7 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const CLEANUP_INTERVAL_MS = 60 * 1000; // clean up expired secrets every minute
 const DEFAULT_TTL_HOURS = 24;
 const MAX_TTL_HOURS = 168; // 7 days
+const MAX_LIVE_SECRETS = 1000; // global cap — prevents storage exhaustion DoS (TM-002)
 
 // ── Rate limiting (in-memory) ─────────────────────────────────────────────────
 const rateLimitMap = new Map(); // ip -> { count, windowStart }
@@ -598,9 +599,10 @@ openDrop();
 
 // ── Request handling ──────────────────────────────────────────────────────────
 function getClientIP(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return req.socket.remoteAddress || 'unknown';
+  // Use X-Real-IP set by nginx from $remote_addr (the actual connecting IP).
+  // Do NOT use X-Forwarded-For: it can be spoofed by clients to bypass rate limiting (TM-001).
+  // nginx config sets: proxy_set_header X-Real-IP $remote_addr;
+  return req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
 }
 
 function readBody(req) {
@@ -650,6 +652,17 @@ const server = http.createServer(async (req, res) => {
       const ip = getClientIP(req);
       if (!checkRateLimit(ip)) {
         return jsonResponse(res, 429, { error: 'Rate limit exceeded. Try again later.' });
+      }
+
+      // Global storage cap — reject if too many live secrets (TM-002 storage DoS)
+      try {
+        const liveCount = fs.readdirSync(SECRETS_DIR).filter(f => f.endsWith('.json')).length;
+        if (liveCount >= MAX_LIVE_SECRETS) {
+          console.warn(`[create] REJECTED: global cap reached (${liveCount} live secrets) ip=${ip}`);
+          return jsonResponse(res, 503, { error: 'Service temporarily at capacity. Try again later.' });
+        }
+      } catch {
+        // If we can't read the dir, fail open (don't block legitimate users)
       }
 
       let body;
