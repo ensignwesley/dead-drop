@@ -396,7 +396,7 @@ const CREATE_PAGE = htmlPage('Create', `
     <div class="result-label">🔐 Your one-time drop link</div>
     <div id="dropUrl" class="result-url"></div>
     <div class="copy-row">
-      <button class="secondary" onclick="copyUrl()">📋 Copy Link</button>
+      <button class="secondary" onclick="copyUrl(this)">📋 Copy Link</button>
       <button class="secondary" onclick="resetForm()">＋ New Drop</button>
     </div>
     <div class="notice">⚠ This link works once. Share it carefully. After viewing, it's gone forever.</div>
@@ -485,12 +485,20 @@ async function createDrop() {
   }
 }
 
-function copyUrl() {
+function copyUrl(btn) {
   const url = document.getElementById('dropUrl').textContent;
   navigator.clipboard.writeText(url).then(() => {
-    const btn = event.target;
     btn.textContent = '✓ Copied!';
     setTimeout(() => btn.textContent = '📋 Copy Link', 2000);
+  }).catch(() => {
+    // Clipboard API unavailable — highlight the URL for manual copy
+    const el = document.getElementById('dropUrl');
+    const range = document.createRange();
+    range.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    btn.textContent = '⚠ Select & copy manually';
+    setTimeout(() => btn.textContent = '📋 Copy Link', 3000);
   });
 }
 
