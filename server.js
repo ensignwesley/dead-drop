@@ -642,6 +642,13 @@ const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url, true);
   const pathname = parsed.pathname.replace(/\/+$/, '') || '/';
   const method = req.method.toUpperCase();
+  // HEAD requests use GET routing but return no body (RFC 7231 §4.3.2)
+  const isHead = method === 'HEAD';
+  const effectiveMethod = isHead ? 'GET' : method;
+  if (isHead) {
+    const _end = res.end.bind(res);
+    res.end = (_body, ...args) => _end(undefined, ...args);
+  }
 
   // Security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -651,7 +658,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // GET /drop → create form
-    if (method === 'GET' && (pathname === '/drop' || pathname === '')) {
+    if (effectiveMethod === 'GET' && (pathname === '/drop' || pathname === '')) {
       return htmlResponse(res, 200, CREATE_PAGE);
     }
 
@@ -714,7 +721,7 @@ const server = http.createServer(async (req, res) => {
 
     // GET /drop/s/:id → view page (HTML)
     const viewMatch = pathname.match(/^\/drop\/s\/([^/]+)$/);
-    if (method === 'GET' && viewMatch) {
+    if (effectiveMethod === 'GET' && viewMatch) {
       const id = viewMatch[1];
       // Validate UUID format before serving page
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
@@ -724,6 +731,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // GET /drop/api/secret/:id → retrieve + burn
+    // Explicitly method === 'GET' — HEAD must NOT burn the secret (RFC 7231 §4.3.2)
     const apiMatch = pathname.match(/^\/drop\/api\/secret\/([^/]+)$/);
     if (method === 'GET' && apiMatch) {
       const id = apiMatch[1];
