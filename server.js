@@ -374,7 +374,8 @@ const CREATE_PAGE = htmlPage('Create', `
 <div class="card">
   <div class="field">
     <label>Secret Message</label>
-    <textarea id="secret" placeholder="Eyes only. Type your message here..." autofocus></textarea>
+    <textarea id="secret" placeholder="Eyes only. Type your message here..." autofocus maxlength="65536" oninput="updateCount(this)"></textarea>
+    <div id="charCount" style="text-align:right;font-size:0.62rem;color:var(--muted);letter-spacing:0.1em;margin-top:0.25rem">65536 chars remaining</div>
   </div>
   <div class="row">
     <div class="field" style="flex:1">
@@ -404,6 +405,13 @@ const CREATE_PAGE = htmlPage('Create', `
 </div>
 
 <script>
+function updateCount(ta) {
+  const rem = ta.maxLength - ta.value.length;
+  const el = document.getElementById('charCount');
+  el.textContent = rem.toLocaleString() + ' chars remaining';
+  el.style.color = rem < 1000 ? (rem < 200 ? '#cc4444' : '#ff9500') : '';
+}
+
 // ── Crypto helpers ────────────────────────────────────────────────────────────
 async function generateKey() {
   return await crypto.subtle.generateKey(
