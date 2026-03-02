@@ -762,6 +762,22 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    // GET /drop/health → lightweight health beacon
+    if (effectiveMethod === 'GET' && pathname === '/drop/health') {
+      let activeDrops = 0;
+      try {
+        const files = fs.readdirSync(SECRETS_DIR);
+        activeDrops = files.filter(f => f.endsWith('.json')).length;
+      } catch (_) {}
+      return jsonResponse(res, 200, {
+        ok: true,
+        service: 'dead-drop',
+        version: '1.0',
+        active_drops: activeDrops,
+        ts: Date.now(),
+      });
+    }
+
     // 404
     return jsonResponse(res, 404, { error: 'Not found.' });
 
