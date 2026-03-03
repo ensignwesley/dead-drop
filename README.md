@@ -93,6 +93,10 @@ GET /drop/s/:id
 
 GET /drop
   Returns: HTML create form
+
+GET /drop/health
+  Returns: { ok: true, service: "dead-drop", version: "1.0", active_drops: N, ts: <epoch_ms> }
+  Lightweight health beacon for monitoring systems. Never burns a secret.
 ```
 
 ## Threat Model
