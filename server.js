@@ -30,6 +30,9 @@ const DEFAULT_TTL_HOURS = 24;
 const MAX_TTL_HOURS = 168; // 7 days
 const MAX_LIVE_SECRETS = 1000; // global cap — prevents storage exhaustion DoS (TM-002)
 
+// ── Process start time (for uptime reporting) ─────────────────────────────────
+const START_TIME = Date.now();
+
 // ── Rate limiting (in-memory) ─────────────────────────────────────────────────
 const rateLimitMap = new Map(); // ip -> { count, windowStart }
 
@@ -772,8 +775,9 @@ const server = http.createServer(async (req, res) => {
       return jsonResponse(res, 200, {
         ok: true,
         service: 'dead-drop',
-        version: '1.0',
+        version: '1.1',
         active_drops: activeDrops,
+        uptime_seconds: Math.floor((Date.now() - START_TIME) / 1000),
         ts: Date.now(),
       });
     }
