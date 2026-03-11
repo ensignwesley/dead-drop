@@ -805,5 +805,9 @@ server.listen(PORT, '127.0.0.1', () => {
 
 process.on('SIGTERM', () => {
   console.log('[dead-drop] SIGTERM received, shutting down');
+  // Destroy open sockets so server.close() callback fires promptly.
+  // HTTP keep-alive connections would otherwise delay exit by up to keepAliveTimeout.
+  server.closeAllConnections?.();      // Node 18.2+ API
   server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000).unref();
 });
