@@ -29,6 +29,7 @@ Display plaintext               # Server had zero knowledge
 - ☠ **Burn after reading** — secret file deleted immediately on first retrieval
 - ⏱ **Auto-expire** — TTL 1h–7d, background cleanup every 60s
 - 🚫 **Rate limited** — 10 creates per IP per 10 minutes
+- 🩺 **Storage-aware health check** — verifies the secrets directory is readable and writable
 - 📁 **No database** — flat files with strict 0600 permissions
 - 🛡️ **Security headers** — CSP, X-Frame-Options, nosniff, Referrer-Policy
 - 🔒 **Path traversal protection** — UUID format validation before any file access
@@ -95,8 +96,8 @@ GET /drop
   Returns: HTML create form
 
 GET /drop/health
-  Returns: { ok: true, service: "dead-drop", version: "1.1", active_drops: N, uptime_seconds: N, ts: <epoch_ms> }
-  Lightweight health beacon for monitoring systems. Never burns a secret.
+  Returns: { ok: boolean, service: "dead-drop", version: "1.2", active_drops: N, storage: { readable, writable, error }, uptime_seconds: N, ts: <epoch_ms> }
+  Storage-backed health beacon for monitoring systems. It verifies the secrets directory can be listed and written without burning a secret.
 ```
 
 ## Threat Model
@@ -111,6 +112,7 @@ GET /drop/health
 | DoS via create spam | 10 creates/IP/10min rate limit |
 | Path traversal | UUID regex validation before file access |
 | Secret hoarding | TTL max 7 days; background cleanup |
+| Silent storage failure | `/drop/health` performs a read/write probe and returns 503 if storage is unhealthy |
 | XSS | Strict CSP: `default-src 'self'` |
 | Clickjacking | `X-Frame-Options: DENY` |
 

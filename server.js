@@ -88,6 +88,36 @@ function loadAndDeleteSecret(id) {
   }
 }
 
+function checkStorageHealth() {
+  const result = {
+    ok: false,
+    readable: false,
+    writable: false,
+    active_drops: 0,
+    error: null,
+  };
+
+  const probePath = path.join(SECRETS_DIR, `.health-${process.pid}-${Date.now()}-${crypto.randomUUID()}.tmp`);
+
+  try {
+    const files = fs.readdirSync(SECRETS_DIR);
+    result.readable = true;
+    result.active_drops = files.filter(f => f.endsWith('.json')).length;
+
+    fs.writeFileSync(probePath, 'ok', { mode: 0o600, flag: 'wx' });
+    fs.unlinkSync(probePath);
+    result.writable = true;
+    result.ok = true;
+  } catch (err) {
+    result.error = err && err.message ? err.message : 'storage check failed';
+    try {
+      if (fs.existsSync(probePath)) fs.unlinkSync(probePath);
+    } catch (_) {}
+  }
+
+  return result;
+}
+
 // ── TTL cleanup ───────────────────────────────────────────────────────────────
 function cleanupExpired() {
   try {
@@ -765,18 +795,19 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // GET /drop/health → lightweight health beacon
+    // GET /drop/health → storage-backed health beacon
     if (effectiveMethod === 'GET' && pathname === '/drop/health') {
-      let activeDrops = 0;
-      try {
-        const files = fs.readdirSync(SECRETS_DIR);
-        activeDrops = files.filter(f => f.endsWith('.json')).length;
-      } catch (_) {}
-      return jsonResponse(res, 200, {
-        ok: true,
+      const storage = checkStorageHealth();
+      return jsonResponse(res, storage.ok ? 200 : 503, {
+        ok: storage.ok,
         service: 'dead-drop',
-        version: '1.1',
-        active_drops: activeDrops,
+        version: '1.2',
+        active_drops: storage.active_drops,
+        storage: {
+          readable: storage.readable,
+          writable: storage.writable,
+          error: storage.error,
+        },
         uptime_seconds: Math.floor((Date.now() - START_TIME) / 1000),
         ts: Date.now(),
       });
