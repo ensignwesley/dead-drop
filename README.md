@@ -30,6 +30,7 @@ Display plaintext               # Server had zero knowledge
 - ⏱ **Auto-expire** — TTL 1h–7d, background cleanup every 60s
 - 🚫 **Rate limited** — 10 creates per IP per 10 minutes
 - 🩺 **Storage-aware health check** — verifies the secrets directory is readable and writable
+- 📊 **Public aggregate stats** — created/burned/expired counters, no secret metadata
 - 📁 **No database** — flat files with strict 0600 permissions
 - 🛡️ **Security headers** — CSP, X-Frame-Options, nosniff, Referrer-Policy
 - 🔒 **Path traversal protection** — UUID format validation before any file access
@@ -98,6 +99,10 @@ GET /drop
 GET /drop/health
   Returns: { ok: boolean, service: "dead-drop", version: "1.2", active_drops: N, storage: { readable, writable, error }, uptime_seconds: N, ts: <epoch_ms> }
   Storage-backed health beacon for monitoring systems. It verifies the secrets directory can be listed and written without burning a secret.
+
+GET /drop/stats
+  Returns: { service: "dead-drop", version: "1.2", created_total: N, burned_total: N, expired_total: N, active_drops: N, reset_on_restart: true, uptime_seconds: N, ts: <epoch_ms> }
+  Public aggregate counters only. No secret content, IDs, client IPs, timestamps, TTLs, or per-drop metadata. Counters are in-memory and reset when the service restarts.
 ```
 
 ## Threat Model
@@ -113,6 +118,7 @@ GET /drop/health
 | Path traversal | UUID regex validation before file access |
 | Secret hoarding | TTL max 7 days; background cleanup |
 | Silent storage failure | `/drop/health` performs a read/write probe and returns 503 if storage is unhealthy |
+| Stats leaking sensitive data | `/drop/stats` exposes aggregate counters only; no IDs, content, IPs, TTLs, or per-drop metadata |
 | XSS | Strict CSP: `default-src 'self'` |
 | Clickjacking | `X-Frame-Options: DENY` |
 

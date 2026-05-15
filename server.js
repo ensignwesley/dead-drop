@@ -33,6 +33,13 @@ const MAX_LIVE_SECRETS = 1000; // global cap — prevents storage exhaustion DoS
 // ── Process start time (for uptime reporting) ─────────────────────────────────
 const START_TIME = Date.now();
 
+// ── Public aggregate stats (in-memory; reset on restart) ─────────────────────
+const stats = {
+  created_total: 0,
+  burned_total: 0,
+  expired_total: 0,
+};
+
 // ── Rate limiting (in-memory) ─────────────────────────────────────────────────
 const rateLimitMap = new Map(); // ip -> { count, windowStart }
 
@@ -133,6 +140,7 @@ function cleanupExpired() {
         const ttlMs = (data.ttl_hours || DEFAULT_TTL_HOURS) * 60 * 60 * 1000;
         if (now - data.created_at > ttlMs) {
           fs.unlinkSync(p);
+          stats.expired_total++;
           cleaned++;
         }
       } catch {
@@ -756,6 +764,7 @@ const server = http.createServer(async (req, res) => {
         created_at: Date.now()
       });
 
+      stats.created_total++;
       console.log(`[create] id=${id} ttl=${ttl}h ip=${ip}`);
       return jsonResponse(res, 200, { id });
     }
@@ -782,12 +791,15 @@ const server = http.createServer(async (req, res) => {
         return jsonResponse(res, 404, { error: 'Not found or already read.' });
       }
 
-      // Check TTL before serving
+      // Check TTL before serving. loadAndDeleteSecret already burned the file,
+      // so expired-on-read increments expired, not burned.
       const ttlMs = (secret.ttl_hours || DEFAULT_TTL_HOURS) * 60 * 60 * 1000;
       if (Date.now() - secret.created_at > ttlMs) {
+        stats.expired_total++;
         return jsonResponse(res, 404, { error: 'This drop has expired.' });
       }
 
+      stats.burned_total++;
       console.log(`[read] id=${id} — burned`);
       return jsonResponse(res, 200, {
         ciphertext: secret.ciphertext,
@@ -808,6 +820,22 @@ const server = http.createServer(async (req, res) => {
           writable: storage.writable,
           error: storage.error,
         },
+        uptime_seconds: Math.floor((Date.now() - START_TIME) / 1000),
+        ts: Date.now(),
+      });
+    }
+
+    // GET /drop/stats → public aggregate counters, reset on restart
+    if (effectiveMethod === 'GET' && pathname === '/drop/stats') {
+      const storage = checkStorageHealth();
+      return jsonResponse(res, 200, {
+        service: 'dead-drop',
+        version: '1.2',
+        created_total: stats.created_total,
+        burned_total: stats.burned_total,
+        expired_total: stats.expired_total,
+        active_drops: storage.active_drops,
+        reset_on_restart: true,
         uptime_seconds: Math.floor((Date.now() - START_TIME) / 1000),
         ts: Date.now(),
       });
