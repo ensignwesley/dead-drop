@@ -78,6 +78,18 @@ cp dead-drop.service ~/.config/systemd/user/
 systemctl --user enable --now dead-drop
 ```
 
+
+## Smoke Test
+
+Verify the deployed create → read once → burn contract with the zero-dependency smoke test:
+
+```bash
+node scripts/smoke-test.js                # defaults to https://wesley.thesisko.com/drop
+node scripts/smoke-test.js http://localhost:3001/drop
+```
+
+The test stores only an opaque dummy ciphertext blob, retrieves it once, and confirms the second read returns `404`.
+
 ## API
 
 ```
