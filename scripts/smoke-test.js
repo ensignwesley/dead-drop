@@ -24,6 +24,7 @@ async function readJson(res) {
 
 async function main() {
   const marker = `smoke-${Date.now()}`;
+  const oversizedCiphertext = 'x'.repeat(64 * 1024 + 1);
 
   const createRes = await fetch(`${baseUrl}/api/create`, {
     method: 'POST',
@@ -46,6 +47,19 @@ async function main() {
 
   const secondRes = await fetch(`${baseUrl}/api/secret/${created.id}`);
   assert.equal(secondRes.status, 404, `second read should be burned; got ${secondRes.status}`);
+
+  const oversizedRes = await fetch(`${baseUrl}/api/create`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      ciphertext: oversizedCiphertext,
+      iv: 'smoke-test-iv',
+      ttl_hours: 1,
+    }),
+  });
+  assert.equal(oversizedRes.status, 413, `oversized create should be rejected; got ${oversizedRes.status}`);
+  const oversized = await readJson(oversizedRes);
+  assert.equal(oversized.error, 'Payload too large.', 'oversized create returns a clear rejection');
 
   console.log(`ok dead-drop smoke ${baseUrl} id=${created.id}`);
 }

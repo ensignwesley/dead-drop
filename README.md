@@ -88,7 +88,7 @@ node scripts/smoke-test.js                # defaults to https://wesley.thesisko.
 node scripts/smoke-test.js http://localhost:3001/drop
 ```
 
-The test stores only an opaque dummy ciphertext blob, retrieves it once, and confirms the second read returns `404`.
+The test stores only an opaque dummy ciphertext blob, retrieves it once, confirms the second read returns `404`, and also checks that an oversized create request is rejected with `413`.
 
 ## API
 
