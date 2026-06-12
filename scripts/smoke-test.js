@@ -39,6 +39,16 @@ async function main() {
   const created = await readJson(createRes);
   assert.match(created.id, /^[0-9a-f-]{36}$/i, 'create response includes UUID id');
 
+  const healthRes = await fetch(`${baseUrl}/health`);
+  assert.equal(healthRes.status, 200, `health returned ${healthRes.status}`);
+  const health = await readJson(healthRes);
+  assert.equal(health.ok, true, 'health reports ok=true');
+  assert.equal(health.storage?.readable, true, 'health reports storage readable');
+  assert.equal(health.storage?.writable, true, 'health reports storage writable');
+
+  const headRes = await fetch(`${baseUrl}/s/${created.id}`, { method: 'HEAD' });
+  assert.equal(headRes.status, 200, `HEAD view returned ${headRes.status}`);
+
   const firstRes = await fetch(`${baseUrl}/api/secret/${created.id}`);
   assert.equal(firstRes.status, 200, `first read returned ${firstRes.status}`);
   const first = await readJson(firstRes);
