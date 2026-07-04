@@ -22,9 +22,20 @@ async function readJson(res) {
   }
 }
 
+function assertSecurityHeaders(res, label) {
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff', `${label} nosniff header`);
+  assert.equal(res.headers.get('x-frame-options'), 'DENY', `${label} frame denial header`);
+  assert.equal(res.headers.get('referrer-policy'), 'no-referrer', `${label} referrer policy header`);
+  assert.match(res.headers.get('content-security-policy') || '', /default-src 'self'/, `${label} CSP header`);
+}
+
 async function main() {
   const marker = `smoke-${Date.now()}`;
   const oversizedCiphertext = 'x'.repeat(64 * 1024 + 1);
+
+  const pageRes = await fetch(`${baseUrl}/`, { headers: { 'User-Agent': 'dead-drop-smoke/1.0' } });
+  assert.equal(pageRes.status, 200, `page returned ${pageRes.status}`);
+  assertSecurityHeaders(pageRes, 'page');
 
   const createRes = await fetch(`${baseUrl}/api/create`, {
     method: 'POST',
@@ -41,6 +52,7 @@ async function main() {
 
   const healthRes = await fetch(`${baseUrl}/health`);
   assert.equal(healthRes.status, 200, `health returned ${healthRes.status}`);
+  assertSecurityHeaders(healthRes, 'health');
   const health = await readJson(healthRes);
   assert.equal(health.ok, true, 'health reports ok=true');
   assert.equal(health.storage?.readable, true, 'health reports storage readable');
