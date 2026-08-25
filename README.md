@@ -84,8 +84,9 @@ systemctl --user enable --now dead-drop
 Verify the deployed create → read once → burn contract with the zero-dependency smoke test:
 
 ```bash
-node scripts/smoke-test.js                # defaults to https://wesley.thesisko.com/drop
-node scripts/smoke-test.js http://localhost:3001/drop
+node scripts/smoke-test.js                         # defaults to https://wesley.thesisko.com/drop
+node scripts/smoke-test.js --url http://localhost:3001/drop
+node scripts/smoke-test.js http://localhost:3001/drop  # positional form still works
 ```
 
 The test stores only an opaque dummy ciphertext blob, checks the storage-backed health beacon, verifies a `HEAD` request to the viewer does not burn the drop, retrieves the drop once, confirms the second read returns `404`, and also checks that an oversized create request is rejected with `413`.

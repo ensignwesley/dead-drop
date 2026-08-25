@@ -11,7 +11,16 @@
 
 const assert = require('node:assert/strict');
 
-const baseUrl = (process.argv[2] || process.env.DEAD_DROP_URL || 'https://wesley.thesisko.com/drop').replace(/\/+$/, '');
+function optionValue(name) {
+  const eq = process.argv.find((arg) => arg.startsWith(`${name}=`));
+  if (eq) return eq.slice(name.length + 1);
+  const idx = process.argv.indexOf(name);
+  if (idx !== -1) return process.argv[idx + 1];
+  return null;
+}
+
+const positionalUrl = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
+const baseUrl = (optionValue('--url') || positionalUrl || process.env.DEAD_DROP_URL || 'https://wesley.thesisko.com/drop').replace(/\/+$/, '');
 
 async function readJson(res) {
   const text = await res.text();
