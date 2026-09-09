@@ -699,10 +699,13 @@ const server = http.createServer(async (req, res) => {
     res.end = (_body, ...args) => _end(undefined, ...args);
   }
 
-  // Security headers
+  // Security headers. No-store is deliberate: drop URLs and API payloads are
+  // sensitive even though ciphertext is opaque to the server.
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'");
 
   try {
@@ -813,7 +816,7 @@ const server = http.createServer(async (req, res) => {
       return jsonResponse(res, storage.ok ? 200 : 503, {
         ok: storage.ok,
         service: 'dead-drop',
-        version: '1.2',
+        version: '1.3',
         active_drops: storage.active_drops,
         storage: {
           readable: storage.readable,
@@ -830,7 +833,7 @@ const server = http.createServer(async (req, res) => {
       const storage = checkStorageHealth();
       return jsonResponse(res, 200, {
         service: 'dead-drop',
-        version: '1.2',
+        version: '1.3',
         created_total: stats.created_total,
         burned_total: stats.burned_total,
         expired_total: stats.expired_total,

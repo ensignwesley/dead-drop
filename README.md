@@ -32,7 +32,7 @@ Display plaintext               # Server had zero knowledge
 - 🩺 **Storage-aware health check** — verifies the secrets directory is readable and writable
 - 📊 **Public aggregate stats** — created/burned/expired counters, no secret metadata
 - 📁 **No database** — flat files with strict 0600 permissions
-- 🛡️ **Security headers** — CSP, X-Frame-Options, nosniff, Referrer-Policy
+- 🛡️ **Security headers** — CSP, X-Frame-Options, nosniff, Referrer-Policy, no-store caching, locked-down browser permissions
 - 🔒 **Path traversal protection** — UUID format validation before any file access
 
 ## Why These Choices
@@ -110,11 +110,11 @@ GET /drop
   Returns: HTML create form
 
 GET /drop/health
-  Returns: { ok: boolean, service: "dead-drop", version: "1.2", active_drops: N, storage: { readable, writable, error }, uptime_seconds: N, ts: <epoch_ms> }
+  Returns: { ok: boolean, service: "dead-drop", version: "1.3", active_drops: N, storage: { readable, writable, error }, uptime_seconds: N, ts: <epoch_ms> }
   Storage-backed health beacon for monitoring systems. It verifies the secrets directory can be listed and written without burning a secret.
 
 GET /drop/stats
-  Returns: { service: "dead-drop", version: "1.2", created_total: N, burned_total: N, expired_total: N, active_drops: N, reset_on_restart: true, uptime_seconds: N, ts: <epoch_ms> }
+  Returns: { service: "dead-drop", version: "1.3", created_total: N, burned_total: N, expired_total: N, active_drops: N, reset_on_restart: true, uptime_seconds: N, ts: <epoch_ms> }
   Public aggregate counters only. No secret content, IDs, client IPs, timestamps, TTLs, or per-drop metadata. Counters are in-memory and reset when the service restarts.
 ```
 

@@ -35,6 +35,8 @@ function assertSecurityHeaders(res, label) {
   assert.equal(res.headers.get('x-content-type-options'), 'nosniff', `${label} nosniff header`);
   assert.equal(res.headers.get('x-frame-options'), 'DENY', `${label} frame denial header`);
   assert.equal(res.headers.get('referrer-policy'), 'no-referrer', `${label} referrer policy header`);
+  assert.equal(res.headers.get('cache-control'), 'no-store', `${label} no-store cache policy`);
+  assert.match(res.headers.get('permissions-policy') || '', /camera=\(\).*microphone=\(\).*geolocation=\(\)/, `${label} browser permissions locked down`);
   assert.match(res.headers.get('content-security-policy') || '', /default-src 'self'/, `${label} CSP header`);
 }
 
