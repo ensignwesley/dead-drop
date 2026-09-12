@@ -89,7 +89,7 @@ node scripts/smoke-test.js --url http://localhost:3001/drop
 node scripts/smoke-test.js http://localhost:3001/drop  # positional form still works
 ```
 
-The test stores only an opaque dummy ciphertext blob, checks the storage-backed health beacon, verifies a `HEAD` request to the viewer does not burn the drop, retrieves the drop once, confirms the second read returns `404`, and also checks that an oversized create request is rejected with `413`.
+The test stores only an opaque dummy ciphertext blob, checks the storage-backed health beacon, verifies `/stats` exposes only aggregate numeric counters, verifies a `HEAD` request to the viewer does not burn the drop, retrieves the drop once, confirms the second read returns `404`, checks the burn counter advances, and also checks that an oversized create request is rejected with `413`.
 
 ## API
 

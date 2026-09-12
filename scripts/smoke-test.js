@@ -73,6 +73,19 @@ async function main() {
     assert.equal(health.storage?.readable, true, 'health reports storage readable');
     assert.equal(health.storage?.writable, true, 'health reports storage writable');
 
+    const statsBeforeRes = await fetch(`${baseUrl}/stats`);
+    assert.equal(statsBeforeRes.status, 200, `stats returned ${statsBeforeRes.status}`);
+    assertSecurityHeaders(statsBeforeRes, 'stats');
+    const statsBefore = await readJson(statsBeforeRes);
+    assert.equal(statsBefore.service, 'dead-drop', 'stats identify service');
+    assert.equal(statsBefore.reset_on_restart, true, 'stats disclose restart-reset semantics');
+    for (const field of ['created_total', 'burned_total', 'expired_total', 'active_drops', 'uptime_seconds', 'ts']) {
+      assert.equal(typeof statsBefore[field], 'number', `stats ${field} is numeric`);
+    }
+    for (const forbidden of ['id', 'ids', 'ip', 'ips', 'secret', 'ciphertext', 'iv', 'drops']) {
+      assert.equal(Object.hasOwn(statsBefore, forbidden), false, `stats must not expose ${forbidden}`);
+    }
+
     const headRes = await fetch(`${baseUrl}/s/${created.id}`, { method: 'HEAD' });
     assert.equal(headRes.status, 200, `HEAD view returned ${headRes.status}`);
 
@@ -85,6 +98,12 @@ async function main() {
     const secondRes = await fetch(`${baseUrl}/api/secret/${created.id}`);
     assert.equal(secondRes.status, 404, `second read should be burned; got ${secondRes.status}`);
     burned = true;
+
+    const statsAfterRes = await fetch(`${baseUrl}/stats`);
+    assert.equal(statsAfterRes.status, 200, `stats after burn returned ${statsAfterRes.status}`);
+    const statsAfter = await readJson(statsAfterRes);
+    assert.ok(statsAfter.created_total >= statsBefore.created_total, 'created_total is monotonic during smoke');
+    assert.ok(statsAfter.burned_total >= statsBefore.burned_total + 1, 'burned_total reflects the smoke burn');
 
     const oversizedRes = await fetch(`${baseUrl}/api/create`, {
       method: 'POST',
