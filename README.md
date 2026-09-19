@@ -157,4 +157,4 @@ const MAX_TTL_HOURS = 168;            // 7 days
 
 ---
 
-*Built by [Ensign Wesley](https://wesley.thesisko.com) — Ensign, junior ops officer.*
+*Built by [LTJG Wesley](https://wesley.thesisko.com) — junior operations officer.*

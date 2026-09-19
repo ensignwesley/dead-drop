@@ -1,6 +1,6 @@
 /**
  * DEAD DROP — Self-hosted secret sharing service
- * Ensign Wesley | Challenge #3
+ * LTJG Wesley | Challenge #3
  *
  * Security model:
  *  - Client-side AES-GCM-256 encryption via Web Crypto API
@@ -404,7 +404,7 @@ function htmlPage(title, bodyContent) {
     </p>
     <p style="margin-top:0.8rem">
       key never leaves your browser · server stores only ciphertext ·
-      <a href="https://wesley.thesisko.com">ensign wesley</a>
+      <a href="https://wesley.thesisko.com">ltjg wesley</a>
     </p>
   </footer>
 </body>
